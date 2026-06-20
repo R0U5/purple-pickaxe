@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-top">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="#9146ff" width="24" height="24">
+            <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/>
+          </svg>
+          <span class="title">Purple Pickaxe</span>
+        <span id="connectionDot" class="connection-dot disconnected" title="Connecting..."></span>
+        </div>
+        <div class="header-actions">
+          <button id="resetBtn" class="btn-icon" title="Reset session">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="session-info">
+        <span class="session-label">Session</span>
+        <span id="sessionTime" class="session-time">0m</span>
+        <span class="session-dot">&#183;</span>
+        <span id="sessionStart" class="session-start"></span>
+      </div>
+    </header>
+
+    <div id="authBanner" class="auth-banner" style="display:none">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+        <path d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zm3 8H9V7a3 3 0 016 0z"/>
+      </svg>
+      <div class="auth-banner-text">
+        <strong>You're not logged into Twitch.</strong>
+        <span>Log in at twitch.tv so Purple Pickaxe can collect points and drops.</span>
+      </div>
+      <button id="authBannerBtn" class="auth-banner-btn">Open Twitch</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card points-card">
+        <div class="stat-value" id="totalPoints">0</div>
+        <div class="stat-label">Points claimed</div>
+      </div>
+      <div class="stat-card balance-card">
+        <div class="stat-value" id="pointsBalance">0</div>
+        <div class="stat-label">Points balance</div>
+      </div>
+      <div class="stat-card drops-card">
+        <div class="stat-value" id="totalDrops">0</div>
+        <div class="stat-label">Drops claimed</div>
+      </div>
+    </div>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="points">Points</button>
+      <button class="tab" data-tab="drops">Drops</button>
+    </nav>
+
+    <div class="tab-content active" id="tab-points">
+      <div class="tab-section-label">Points Mined by Channel</div>
+      <div id="pointsList" class="list">
+        <div class="empty-state">No points claimed this session</div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-drops">
+      <div id="dropsList" class="list">
+        <div class="empty-state">No drops this session</div>
+      </div>
+    </div>
+
+    <div id="diagnostics" class="diagnostics" style="display:none">
+      <div class="diag-header">
+        <span class="diag-title">Diagnostics</span>
+        <span id="diagStatus" class="diag-badge"></span>
+      </div>
+      <div id="diagDetail" class="diag-detail"></div>
+    </div>
+
+    <footer class="footer">
+      <span class="footer-text">Channel: <span id="activeChannels">-</span></span>
+      <span class="footer-dot">&#183;</span>
+      <span class="footer-text">ver <span id="version">1.0</span></span>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
