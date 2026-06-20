@@ -176,5 +176,18 @@ body {
 .diag-waiting { background: #3d2e0a; color: var(--gold); }
 .diag-detail { color: var(--text2); word-break: break-all; }
 
-.footer { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; border-top: 1px solid var(--surface2); font-size: 11px; color: var(--text2); }
+.footer { position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; border-top: 1px solid var(--surface2); font-size: 11px; color: var(--text2); }
 .footer-dot { color: var(--surface2); }
+
+/* Unobtrusive "buy me a coffee" link tucked into the bottom-right corner.
+   Muted by default so it never competes with the footer text; warms to a
+   coffee-toned gold on hover. */
+.coffee-link {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px; border-radius: 4px;
+  color: var(--text2); opacity: .6;
+  transition: color .15s, opacity .15s, background .15s;
+}
+.coffee-link:hover { color: var(--gold); opacity: 1; background: var(--surface2); }
+.coffee-link svg { display: block; }
