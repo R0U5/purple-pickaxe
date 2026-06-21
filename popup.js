@@ -1,5 +1,4 @@
 let session = null;
-let tickInterval = null;
 let refreshInterval = null;
 let inventoryTabId = null;
 let hadDrops = null;
@@ -37,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   setupReset();
   setupAuthBanner();
-  startTick();
   startRefresh();
   pingContentScript();
 });
@@ -47,10 +45,6 @@ function setupAuthBanner() {
   if (btn) btn.addEventListener('click', () => {
     chrome.tabs.create({ url: 'https://www.twitch.tv/login' });
   });
-}
-
-function startTick() {
-  tickInterval = setInterval(() => updateSessionTime(), 1000);
 }
 
 function startRefresh() {
@@ -219,17 +213,8 @@ function render() {
   document.getElementById('totalDrops').textContent = totalCampaignDrops || 0;
   document.getElementById('activeChannels').textContent = session.activeChannel || '-';
 
-  document.getElementById('sessionStart').textContent = formatTime(session.startTime);
-  updateSessionTime();
-
   renderPoints();
   renderDrops(drops);
-}
-
-function updateSessionTime() {
-  if (!session) return;
-  const elapsed = Math.floor((Date.now() - session.startTime) / 1000);
-  document.getElementById('sessionTime').textContent = formatDuration(elapsed);
 }
 
 function renderPoints() {
@@ -501,21 +486,4 @@ function formatDurationCompact(secs) {
   if (m < 60) return `${m}m`;
   const h = m / 60;
   return h % 1 === 0 ? `${h}h` : `${h.toFixed(1)}h`;
-}
-
-function formatDuration(secs) {
-  if (secs < 60) return `${secs}s`;
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  if (m < 60) return s ? `${m}m ${s}s` : `${m}m`;
-  const h = Math.floor(m / 60);
-  const rm = m % 60;
-  if (rm > 0) return s ? `${h}h ${rm}m ${s}s` : `${h}h ${rm}m`;
-  return s ? `${h}h ${s}s` : `${h}h`;
-}
-
-function formatTime(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }

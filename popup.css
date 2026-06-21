@@ -45,10 +45,6 @@ body {
 }
 .btn-icon:hover { color: var(--text); background: var(--surface2); }
 
-.session-info { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text2); }
-.session-label { color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; font-size: 10px; }
-.session-dot { color: var(--text2); }
-
 .auth-banner {
   display: flex; align-items: center; gap: 10px;
   margin: 10px 16px 0; padding: 10px 12px;
