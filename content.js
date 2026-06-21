@@ -248,6 +248,12 @@ let dropCacheChannel = null;
 let dropCacheTime = 0;
 let dropCacheErrorTime = 0;
 
+// Campaign ids we've actually tracked on a channel this session. Used to scope
+// inventory-driven claiming to campaigns the user engaged with, so we finish
+// claiming their drops even after the campaign ends and leaves dropCache -
+// without reaching into unrelated campaigns sitting in the global inventory.
+const seenCampaignIds = new Set();
+
 // ── Claim debounce state ──
 const CLAIM_DEBOUNCE_MS = 8000;
 const CLAIM_MAX_RETRIES = 3;
@@ -470,6 +476,7 @@ async function fetchDropMetadata(channelName) {
       const liveDrops = c.timeBasedDrops.filter(d => !(d.endAt && !isNaN(Date.parse(d.endAt)) && Date.parse(d.endAt) <= Date.now()));
       if (!liveDrops.length) continue;
       const key = normalizeCampaign(c.name);
+      seenCampaignIds.add(c.id);
       dropCache[key] = {
         id: c.id,
         name: c.name,
@@ -514,6 +521,7 @@ async function fetchInventory() {
     for (const c of camps) {
       for (const d of (c.timeBasedDrops || [])) {
         map[d.id] = {
+          campaignId: c.id,
           current: d.self?.currentMinutesWatched ?? 0,
           claimed: d.self?.isClaimed === true,
           // Present only once the drop is completed and a reward is claimable.
@@ -976,6 +984,36 @@ async function detectDropsFromDOM() {
       }
       return;
     }
+  }
+
+  // ── Inventory-driven claim ──
+  // Twitch lists completed-but-unclaimed drops in the inventory with a
+  // dropInstanceID. Claim any such drop we haven't claimed yet, even if its
+  // campaign has left the channel drop cache (e.g. the campaign ended with
+  // tiers still uncollected). Without this, those drops stay stuck on
+  // "Ready to claim" because the on-channel path above can no longer see them.
+  // Scoped to campaigns engaged with this session so we don't touch unrelated
+  // ones in the global inventory.
+  for (const [dropId, inv] of Object.entries(inventoryProgress)) {
+    if (!inv.instanceId || inv.claimed) continue;
+    if (claimedDropIds.has(dropId)) continue;
+    if (!seenCampaignIds.has(inv.campaignId)) continue;
+    if (!canAttemptClaim(dropId)) continue;
+
+    console.log('[Twitch Miner] Inventory-driven claim for drop:', dropId, '| campaign:', inv.campaignId);
+    claimState.inProgress = true;
+    const result = await claimDrop(inv.instanceId);
+    if (result && result.ok) {
+      claimedDropIds.add(dropId);
+      sendMessage('DROP_CLAIMED', { campaignId: inv.campaignId, dropId });
+      recordClaimAttempt(dropId, true);
+      inventoryFetchTime = 0; // refresh so isClaimed/instance sync next scan
+    } else {
+      console.error('[Twitch Miner] Inventory-driven claim failed:', result?.error);
+      claimState.inProgress = false;
+      claimState.lastAttempt = Date.now();
+    }
+    return;
   }
 
   // Fallback: no GQL data - use DOM progress bar (requires the highlight DOM)
