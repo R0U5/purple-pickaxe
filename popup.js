@@ -227,15 +227,14 @@ function render() {
 
 function updateSessionTime() {
   if (!session) return;
-  // Measure time on the current channel, not since the extension started.
-  // activeChannelAt is stamped when the active channel changes; fall back to
-  // the session start only if we've never set an active channel.
-  const since = session.activeChannel && session.activeChannelAt
-    ? session.activeChannelAt
-    : session.startTime;
   const el = document.getElementById('sessionTime');
-  if (!since) { el.textContent = '0s'; return; }
-  const elapsed = Math.max(0, Math.floor((Date.now() - since) / 1000));
+  // The timer tracks the current channel's mining session. No active channel
+  // means no session, so there's nothing to count.
+  if (!session.activeChannel || !session.activeChannelAt) {
+    el.textContent = '—';
+    return;
+  }
+  const elapsed = Math.max(0, Math.floor((Date.now() - session.activeChannelAt) / 1000));
   el.textContent = formatDuration(elapsed);
 }
 

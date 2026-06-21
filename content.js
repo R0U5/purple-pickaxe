@@ -1121,6 +1121,7 @@ async function handleUrlChange() {
   const newChannel = extractChannel();
   if (newChannel === currentChannel) return;
 
+  const prevChannel = currentChannel;
   const wasOnChannel = !!currentChannel;
   currentChannel = newChannel;
   console.log('[Twitch Miner] Channel changed to:', currentChannel);
@@ -1133,11 +1134,12 @@ async function handleUrlChange() {
   claimedFallbackKeys.clear();
   restoreClaimedFlags();
 
-  // Leaving channel - stop polling
+  // Leaving channel - stop polling and end the channel session
   if (!currentChannel) {
     if (wasOnChannel) {
       console.log('[Twitch Miner] Left channel - pausing collection');
       if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+      sendMessageAsync('CHANNEL_INACTIVE', { channel: prevChannel });
     }
     return;
   }

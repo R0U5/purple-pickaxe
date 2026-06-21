@@ -73,6 +73,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // Fix 2: Acknowledge so content.js can sequence polls after channel set
       setActiveChannel(message.data).then(() => sendResponse({ ok: true }));
       return true;
+    case 'CHANNEL_INACTIVE':
+      // Left a channel (navigated to a non-channel page). Ends the channel
+      // session so the timer stops. Guarded to only clear when the leaving tab
+      // owned the active channel, so other open channel tabs aren't disturbed.
+      clearActiveChannel(message.data).then(() => sendResponse({ ok: true }));
+      return true;
     case 'POLL_STATUS':
       setPollStatus(message.data);
       break;
@@ -396,6 +402,21 @@ async function setActiveChannel(data) {
   // Fix 5: Only update activeChannel if non-null
   if (newChannel) session.activeChannel = newChannel;
   await persistSession();
+}
+
+// End the current channel session. Only clears when the channel being left is
+// the one currently active, so navigating away in one tab doesn't wipe the
+// session of another focused channel tab.
+async function clearActiveChannel(data) {
+  const session = await getSessionData();
+  const left = sanitizeString(data?.channel);
+  if (left && left === session.activeChannel) {
+    session.activeChannel = null;
+    session.activeChannelAt = 0;
+    session.drops = {};
+    session.totalDropsThisSession = 0;
+    await persistSession();
+  }
 }
 
 async function setPollStatus(data) {
