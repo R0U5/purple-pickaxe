@@ -28,6 +28,17 @@ function isChannelUrl(url) {
   }
 }
 
+// Reset all per-channel session state. Centralized so the badge, timer, drops
+// and per-visit points all clear together wherever a channel session ends.
+function endChannelSession(session) {
+  session.activeChannel = null;
+  session.activeChannelAt = 0;
+  session.activeChannelTabId = null;
+  session.currentChannelPoints = 0;
+  session.drops = {};
+  session.totalDropsThisSession = 0;
+}
+
 // End the channel session when no open tab is on a Twitch channel page, so the
 // badge and popup stop showing stale points. This covers tab close/navigation,
 // where a destroyed content script can't send CHANNEL_INACTIVE itself.
@@ -41,10 +52,7 @@ async function reevaluateActiveChannel() {
   if (tabs.some(t => isChannelUrl(t.url))) return;
   const session = await getSessionData();
   if (session.activeChannel) {
-    session.activeChannel = null;
-    session.activeChannelAt = 0;
-    session.drops = {};
-    session.totalDropsThisSession = 0;
+    endChannelSession(session);
     await persistSession();
   }
 }
@@ -55,11 +63,7 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   // channel tabs remain. A remaining tab re-asserts itself when next focused.
   const session = await getSessionData();
   if (session.activeChannel && session.activeChannelTabId === tabId) {
-    session.activeChannel = null;
-    session.activeChannelAt = 0;
-    session.activeChannelTabId = null;
-    session.drops = {};
-    session.totalDropsThisSession = 0;
+    endChannelSession(session);
     await persistSession();
     return;
   }
@@ -219,6 +223,7 @@ function createNewSession() {
     activeChannel: null,
     activeChannelAt: 0,
     activeChannelTabId: null,
+    currentChannelPoints: 0,
   };
   return persistSession();
 }
@@ -248,8 +253,10 @@ function persistSession() {
 }
 
 function updateBadge(session) {
-  const key = session.activeChannel ? session.activeChannel.toLowerCase() : null;
-  const pts = key ? (session.points[key]?.total || 0) : 0;
+  // Show only the points claimed on the current channel during this visit, and
+  // nothing when there's no active channel. currentChannelPoints resets on
+  // every channel change, so the badge reflects "this channel, right now".
+  const pts = session.activeChannel ? (session.currentChannelPoints || 0) : 0;
   const text = pts > 0 ? formatNum(pts) : '';
   chrome.action.setBadgeText({ text });
   chrome.action.setBadgeBackgroundColor({ color: '#9146ff' });
@@ -274,6 +281,12 @@ async function recordPointClaim(data, tabId) {
   session.points[key].lastSeen = Date.now();
   const cleanAvatar = sanitizeUrl(data.avatar);
   if (cleanAvatar) session.points[key].avatar = cleanAvatar;
+
+  // Per-visit counter for the badge/current-channel stat: only count claims on
+  // the channel currently active (focused), so the badge tracks "this channel".
+  if (session.activeChannel && key === session.activeChannel.toLowerCase()) {
+    session.currentChannelPoints = (session.currentChannelPoints || 0) + amount;
+  }
 
   if (!session.recentChannels) session.recentChannels = [];
   const idx = session.recentChannels.indexOf(key);
@@ -456,6 +469,8 @@ async function setActiveChannel(data, tabId) {
   if (newChannel && newChannel !== session.activeChannel) {
     session.drops = {};
     session.totalDropsThisSession = 0;
+    // Reset the per-visit points so the badge/stat restart for the new channel.
+    session.currentChannelPoints = 0;
     // Stamp when this channel session began. Only on an actual channel change -
     // CHANNEL_ACTIVE also fires on focus pings and re-entry, and the timer must
     // measure time on the current channel, not be reset by those.
@@ -478,11 +493,7 @@ async function clearActiveChannel(data) {
   const session = await getSessionData();
   const left = sanitizeString(data?.channel);
   if (left && left === session.activeChannel) {
-    session.activeChannel = null;
-    session.activeChannelAt = 0;
-    session.activeChannelTabId = null;
-    session.drops = {};
-    session.totalDropsThisSession = 0;
+    endChannelSession(session);
     await persistSession();
   }
 }

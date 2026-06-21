@@ -215,8 +215,9 @@ function render() {
     hadDrops = hasDrops;
   }
 
-  const key = session.activeChannel ? session.activeChannel.toLowerCase() : null;
-  const channelPoints = key ? (session.points[key]?.total || 0) : 0;
+  // Points claimed on the current channel during this visit (resets on switch),
+  // matching the badge. The cross-channel history lives in the list below.
+  const channelPoints = session.currentChannelPoints || 0;
 
   // Balance must reflect the active (focused) channel, not whichever tab polled
   // most recently - otherwise with several Twitch tabs open the number flips
