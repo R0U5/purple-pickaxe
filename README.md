@@ -159,15 +159,3 @@ purple-pickaxe/
 ```
 
 ---
-
-## Contributing
-
-Issues, suggestions, and pull requests are welcome.
-
-If Purple Pickaxe saves you time and you would like to support development, consider sponsoring the project or buying me a coffee.
-
----
-
-## Disclaimer
-
-Purple Pickaxe is an independent project and is **not affiliated with, endorsed by, or sponsored by Twitch Interactive, Inc.** Twitch is a trademark of Twitch Interactive, Inc.
