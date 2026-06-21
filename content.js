@@ -1223,12 +1223,28 @@ async function init() {
   // Fix 3: dropScanLoop starts AFTER auth is available
   dropScanLoop();
 
-  setInterval(() => {
+  // Detect SPA navigation immediately. Twitch routes via History API
+  // (pushState/replaceState) without full page loads, so hook those plus
+  // popstate to react the moment the channel changes - otherwise the
+  // fallback interval below could delay the first claim by up to 2s.
+  const checkUrlChange = () => {
     if (window.location.pathname !== lastPath) {
       lastPath = window.location.pathname;
       handleUrlChange();
     }
-  }, 2000);
+  };
+  for (const method of ['pushState', 'replaceState']) {
+    const original = history[method];
+    history[method] = function (...args) {
+      const result = original.apply(this, args);
+      checkUrlChange();
+      return result;
+    };
+  }
+  window.addEventListener('popstate', checkUrlChange);
+
+  // Fallback poll in case a navigation slips past the History API hooks.
+  setInterval(checkUrlChange, 2000);
 }
 
 if (document.readyState === 'loading') {
