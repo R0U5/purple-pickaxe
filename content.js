@@ -591,9 +591,14 @@ function sendMessageAsync(type, data = {}) {
   });
 }
 
+// Cache of channel login -> profile image URL, populated when resolving user IDs.
+const channelAvatars = {};
+
 async function getUserId(login) {
-  const result = await gql('query($login: String!) { user(login: $login) { id } }', { login });
-  const id = result?.data?.user?.id || null;
+  const result = await gql('query($login: String!) { user(login: $login) { id profileImageURL(width: 70) } }', { login });
+  const user = result?.data?.user;
+  const id = user?.id || null;
+  if (user?.profileImageURL && login) channelAvatars[login.toLowerCase()] = user.profileImageURL;
   if (id) console.log('[Twitch Miner] Resolved', login, '->', id);
   else console.log('[Twitch Miner] Failed to resolve user ID for:', login, 'result:', result?.data);
   return id;
@@ -662,7 +667,7 @@ async function checkAndClaimChannelPoints(channel) {
     ? newBalance - balanceBefore
     : 50;
 
-  sendMessage('POINTS_CLAIMED', { amount: delta, channelName: channel });
+  sendMessage('POINTS_CLAIMED', { amount: delta, channelName: channel, avatar: channelAvatars[channel.toLowerCase()] });
   if (newBalance !== null) {
     sendMessage('POINTS_BALANCE', { balance: newBalance, channelName: channel });
   }
