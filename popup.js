@@ -260,6 +260,9 @@ function renderPoints() {
       const img = avatar.appendChild(document.createElement('img'));
       img.src = p.avatar;
       img.alt = '';
+    } else {
+      avatar.classList.add('channel-avatar-fallback');
+      avatar.textContent = (key[0] || '?').toUpperCase();
     }
 
     const info = item.appendChild(document.createElement('div'));
