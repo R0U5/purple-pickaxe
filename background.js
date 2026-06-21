@@ -49,7 +49,22 @@ async function reevaluateActiveChannel() {
   }
 }
 
-chrome.tabs.onRemoved.addListener(() => reevaluateActiveChannel());
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  // If the closed tab owned the active channel, end the session right away so
+  // the badge doesn't keep showing a closed channel's points while other
+  // channel tabs remain. A remaining tab re-asserts itself when next focused.
+  const session = await getSessionData();
+  if (session.activeChannel && session.activeChannelTabId === tabId) {
+    session.activeChannel = null;
+    session.activeChannelAt = 0;
+    session.activeChannelTabId = null;
+    session.drops = {};
+    session.totalDropsThisSession = 0;
+    await persistSession();
+    return;
+  }
+  reevaluateActiveChannel();
+});
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   // A url change means a tab navigated - re-check whether any channel remains.
   if (changeInfo.url) reevaluateActiveChannel();
@@ -117,7 +132,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     case 'CHANNEL_ACTIVE':
       // Fix 2: Acknowledge so content.js can sequence polls after channel set
-      setActiveChannel(message.data).then(() => sendResponse({ ok: true }));
+      setActiveChannel(message.data, sender.tab?.id).then(() => sendResponse({ ok: true }));
       return true;
     case 'CHANNEL_INACTIVE':
       // Left a channel (navigated to a non-channel page). Ends the channel
@@ -203,6 +218,7 @@ function createNewSession() {
     totalDropsThisSession: 0,
     activeChannel: null,
     activeChannelAt: 0,
+    activeChannelTabId: null,
   };
   return persistSession();
 }
@@ -433,7 +449,7 @@ async function updatePointsBalance(data) {
 // Fix 2: Atomic channel-change drop clear - if the new channel differs,
 // wipe drops and reset the session counter under the same async lock.
 // No more fire-and-forget CLEAR_DROPS race from content.js.
-async function setActiveChannel(data) {
+async function setActiveChannel(data, tabId) {
   const session = await getSessionData();
   const newChannel = sanitizeString(data.channel) || null;
   // Fix 5: Only clear when switching to a real (non-null) channel
@@ -446,7 +462,12 @@ async function setActiveChannel(data) {
     session.activeChannelAt = Date.now();
   }
   // Fix 5: Only update activeChannel if non-null
-  if (newChannel) session.activeChannel = newChannel;
+  if (newChannel) {
+    session.activeChannel = newChannel;
+    // Remember which tab owns the active channel so closing that exact tab can
+    // end the session even when other channel tabs remain open.
+    if (typeof tabId === 'number') session.activeChannelTabId = tabId;
+  }
   await persistSession();
 }
 
@@ -459,6 +480,7 @@ async function clearActiveChannel(data) {
   if (left && left === session.activeChannel) {
     session.activeChannel = null;
     session.activeChannelAt = 0;
+    session.activeChannelTabId = null;
     session.drops = {};
     session.totalDropsThisSession = 0;
     await persistSession();
