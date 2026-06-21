@@ -219,7 +219,6 @@ function render() {
   document.getElementById('totalDrops').textContent = totalCampaignDrops || 0;
   document.getElementById('activeChannels').textContent = session.activeChannel || '-';
 
-  document.getElementById('sessionStart').textContent = formatTime(session.startTime);
   updateSessionTime();
 
   renderPoints();
@@ -260,6 +259,9 @@ function renderPoints() {
       const img = avatar.appendChild(document.createElement('img'));
       img.src = p.avatar;
       img.alt = '';
+    } else {
+      avatar.classList.add('channel-avatar-fallback');
+      avatar.textContent = (key[0] || '?').toUpperCase();
     }
 
     const info = item.appendChild(document.createElement('div'));
@@ -272,7 +274,7 @@ function renderPoints() {
     const pts = item.appendChild(document.createElement('div'));
     pts.className = 'channel-points';
     const total = p.total || 0;
-    pts.textContent = p.count > 1 ? `+${total.toLocaleString()} (${p.count}x)` : `+${total.toLocaleString()}`;
+    pts.textContent = `+${total.toLocaleString()}`;
   }
 }
 
@@ -509,10 +511,4 @@ function formatDuration(secs) {
   const rm = m % 60;
   if (rm > 0) return s ? `${h}h ${rm}m ${s}s` : `${h}h ${rm}m`;
   return s ? `${h}h ${s}s` : `${h}h`;
-}
-
-function formatTime(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
