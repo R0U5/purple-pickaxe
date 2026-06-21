@@ -7,7 +7,53 @@ chrome.runtime.onInstalled.addListener(() => {
   initSession();
 });
 
-initSession();
+initSession().then(() => reevaluateActiveChannel());
+
+// Single-segment Twitch paths that are not channel pages (mirrors content.js).
+const NON_CHANNEL_PATHS = new Set([
+  'search', 'directory', 'following', 'subscriptions', 'downloads',
+  'prime', 'store', 'drops', 'wallet', 'inventory', 'settings',
+  'jobs', 'turbo', 'bits', 'moderator', 'friends', 'notifications',
+]);
+
+function isChannelUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname !== 'www.twitch.tv') return false;
+    const parts = u.pathname.split('/').filter(Boolean);
+    if (parts.length !== 1) return false;
+    return !NON_CHANNEL_PATHS.has(parts[0].toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+// End the channel session when no open tab is on a Twitch channel page, so the
+// badge and popup stop showing stale points. This covers tab close/navigation,
+// where a destroyed content script can't send CHANNEL_INACTIVE itself.
+async function reevaluateActiveChannel() {
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({ url: '*://www.twitch.tv/*' });
+  } catch {
+    return;
+  }
+  if (tabs.some(t => isChannelUrl(t.url))) return;
+  const session = await getSessionData();
+  if (session.activeChannel) {
+    session.activeChannel = null;
+    session.activeChannelAt = 0;
+    session.drops = {};
+    session.totalDropsThisSession = 0;
+    await persistSession();
+  }
+}
+
+chrome.tabs.onRemoved.addListener(() => reevaluateActiveChannel());
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  // A url change means a tab navigated - re-check whether any channel remains.
+  if (changeInfo.url) reevaluateActiveChannel();
+});
 
 function isValidOrigin(sender) {
   return sender.id === chrome.runtime.id;

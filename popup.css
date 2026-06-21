@@ -49,6 +49,13 @@ body {
 .session-info { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text2); }
 .session-label { color: var(--text); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; font-size: 10px; }
 
+.waiting-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 8px; padding: 40px 24px; color: var(--accent);
+}
+.waiting-text { color: var(--text); font-size: 14px; font-weight: 600; }
+.waiting-sub { color: var(--text2); font-size: 12px; }
+
 .auth-banner {
   display: flex; align-items: center; gap: 10px;
   margin: 10px 16px 0; padding: 10px 12px;

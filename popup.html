@@ -41,35 +41,45 @@
       <button id="authBannerBtn" class="auth-banner-btn">Open Twitch</button>
     </div>
 
-    <div class="stats-row">
-      <div class="stat-card points-card">
-        <div class="stat-value" id="totalPoints">0</div>
-        <div class="stat-label">Points claimed</div>
-      </div>
-      <div class="stat-card balance-card">
-        <div class="stat-value" id="pointsBalance">0</div>
-        <div class="stat-label">Points balance</div>
-      </div>
-      <div class="stat-card drops-card">
-        <div class="stat-value" id="totalDrops">0</div>
-        <div class="stat-label">Drops claimed</div>
-      </div>
+    <div id="waitingState" class="waiting-state" style="display:none">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true">
+        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/>
+      </svg>
+      <div class="waiting-text">Waiting for Twitch channel information…</div>
+      <div class="waiting-sub">Open a Twitch channel to start mining points and drops.</div>
     </div>
 
-    <nav class="tabs">
-      <button class="tab active" data-tab="points">Points</button>
-      <button class="tab" data-tab="drops">Drops</button>
-    </nav>
-
-    <div class="tab-content active" id="tab-points">
-      <div id="pointsList" class="list">
-        <div class="empty-state">No points claimed this session</div>
+    <div id="mainContent">
+      <div class="stats-row">
+        <div class="stat-card points-card">
+          <div class="stat-value" id="totalPoints">0</div>
+          <div class="stat-label">Points claimed</div>
+        </div>
+        <div class="stat-card balance-card">
+          <div class="stat-value" id="pointsBalance">0</div>
+          <div class="stat-label">Points balance</div>
+        </div>
+        <div class="stat-card drops-card">
+          <div class="stat-value" id="totalDrops">0</div>
+          <div class="stat-label">Drops claimed</div>
+        </div>
       </div>
-    </div>
 
-    <div class="tab-content" id="tab-drops">
-      <div id="dropsList" class="list">
-        <div class="empty-state">No drops this session</div>
+      <nav class="tabs">
+        <button class="tab active" data-tab="points">Points</button>
+        <button class="tab" data-tab="drops">Drops</button>
+      </nav>
+
+      <div class="tab-content active" id="tab-points">
+        <div id="pointsList" class="list">
+          <div class="empty-state">No points claimed this session</div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-drops">
+        <div id="dropsList" class="list">
+          <div class="empty-state">No drops this session</div>
+        </div>
       </div>
     </div>
 

@@ -159,6 +159,18 @@ function updateAuthBanner() {
 function render() {
   if (!session) return;
   updateAuthBanner();
+
+  // No active channel means there's no live mining session to show. Surface a
+  // waiting message instead of stale stats, and stop here.
+  const hasChannel = !!session.activeChannel;
+  const waiting = document.getElementById('waitingState');
+  const main = document.getElementById('mainContent');
+  if (waiting) waiting.style.display = hasChannel ? 'none' : '';
+  if (main) main.style.display = hasChannel ? '' : 'none';
+  updateSessionTime();
+  document.getElementById('activeChannels').textContent = session.activeChannel || '-';
+  if (!hasChannel) return;
+
   // Preserve the campaign id (the storage key) so the Claim button can report
   // which campaign was claimed back to the background.
   const drops = Object.entries(session.drops || {}).map(([id, c]) => ({ ...c, id: c.id || id }));
@@ -217,9 +229,6 @@ function render() {
   const totalCampaignDrops = activeCampaigns.reduce((sum, c) =>
     sum + (c.drops || []).filter(d => d.claimed || d.status === 'gql_claimed').length, 0);
   document.getElementById('totalDrops').textContent = totalCampaignDrops || 0;
-  document.getElementById('activeChannels').textContent = session.activeChannel || '-';
-
-  updateSessionTime();
 
   renderPoints();
   renderDrops(drops);
