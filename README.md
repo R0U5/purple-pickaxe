@@ -1,4 +1,4 @@
-![Purple Pickaxe](https://github.com/R0U5/Purple-Pickaxe/blob/master/pp1.png)
+![Purple Pickaxe](https://github.com/R0U5/Purple-Pickaxe/blob/master/pp1.png) ![Purple Pickaxe](https://github.com/R0U5/Purple-Pickaxe/blob/master/pp2.png)
 ![Purple Pickaxe](https://github.com/R0U5/Purple-Pickaxe/blob/master/pp2.png)
 
 # Purple Pickaxe
