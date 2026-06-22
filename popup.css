@@ -132,30 +132,11 @@ body {
 .drop-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; }
 .drop-bar-fill.claimed { background: var(--green); }
 .drop-bar-fill.complete { background: var(--gold); }
+.drop-bar-fill.claim-error { background: var(--red); }
 .drop-bar-fill.locked { background: var(--surface2); }
 .drop-bar-fill.active { background: var(--accent); }
 /* Fix 1: gql_claimed muted bar - visually distinct from this-session claims */
 .drop-bar-fill.gql-claimed { background: #444; }
-
-/* Claim button - shown on completed (ready-to-claim) drops */
-.drop-claim-btn {
-  margin-top: 7px;
-  width: 100%;
-  padding: 8px 10px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--accent);
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background .15s, opacity .15s;
-}
-.drop-claim-btn:hover { filter: brightness(1.1); }
-.drop-claim-btn:disabled { cursor: default; opacity: .8; }
-.drop-claim-btn.claiming { background: var(--surface2); color: var(--text2); }
-.drop-claim-btn.claim-done { background: var(--green); }
-.drop-claim-btn.claim-error { background: #7a1f1f; }
 
 /* Campaign-level cumulative progress bar */
 .campaign-bar-row { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; margin-bottom: 4px; }
@@ -172,6 +153,7 @@ body {
 .drop-badge-active { background: #0a3d1a; color: var(--green); }
 .drop-badge-locked { background: var(--surface2); color: var(--text2); }
 .drop-badge-prev { background: #0a3d1a; color: var(--green); }
+.drop-badge-error { background: #3d0a0a; color: var(--red); }
 
 /* Old drop-pct replaced by badges */
 .drop-pct { display: none; }

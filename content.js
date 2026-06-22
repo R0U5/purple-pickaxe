@@ -264,6 +264,13 @@ let claimState = {
   currentDropId: null,
 };
 
+// How long a drop may sit completed-but-unclaimed before we surface an error.
+// Auto-claim keeps retrying in the background; this only changes how it's shown
+// once it's clear claiming isn't succeeding (there is no manual claim button).
+const CLAIM_ERROR_MS = 120000;
+// dropId -> timestamp first seen complete & unclaimed. Drives the error state.
+const completeSince = new Map();
+
 function canAttemptClaim(dropId) {
   const now = Date.now();
   if (claimState.inProgress) return false;
@@ -332,6 +339,7 @@ function buildCampaignState(cached) {
 
     if (isClaimed) {
       drops[i].progress = 100;
+      completeSince.delete(drops[i].id);
       if (thisSessionClaimed) {
         drops[i].claimed = true;
         drops[i].status = 'claimed';
@@ -346,7 +354,17 @@ function buildCampaignState(cached) {
 
   if (firstUnclaimed >= 0) {
     const active = drops[firstUnclaimed];
-    active.status = active.progress >= 100 ? 'complete' : 'active';
+    if (active.progress >= 100) {
+      // Completed but not yet claimed. Auto-claim (DOM + inventory paths) keeps
+      // trying; if it can't succeed within CLAIM_ERROR_MS, show an error rather
+      // than a perpetual "ready" state, since there's no manual claim button.
+      if (!completeSince.has(active.id)) completeSince.set(active.id, Date.now());
+      const waited = Date.now() - completeSince.get(active.id);
+      active.status = waited > CLAIM_ERROR_MS ? 'claim_error' : 'complete';
+    } else {
+      active.status = 'active';
+      completeSince.delete(active.id);
+    }
   }
 
   // Cumulative campaign: top tier defines completion; watched minutes are shared across tiers.
@@ -1170,6 +1188,7 @@ async function handleUrlChange() {
   // Clear claimed Sets synchronously before async repopulation
   claimedDropIds.clear();
   claimedFallbackKeys.clear();
+  completeSince.clear();
   restoreClaimedFlags();
 
   // Leaving channel - stop polling and end the channel session

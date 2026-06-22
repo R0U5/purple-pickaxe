@@ -417,8 +417,13 @@ function renderDrops(campaigns) {
           badge.classList.add('drop-badge-prev');
           break;
         case 'complete':
-          badge.textContent = 'Ready to claim';
+          badge.textContent = 'Claiming…';
           badge.classList.add('drop-badge-ready');
+          break;
+        case 'claim_error':
+          badge.textContent = 'Claim failed';
+          badge.title = 'Auto-claim could not claim this drop yet — still retrying. Check twitch.tv/drops/inventory if it persists.';
+          badge.classList.add('drop-badge-error');
           break;
         case 'active': {
           const curStr = formatDurationCompact(d.currentSeconds || 0);
@@ -444,6 +449,7 @@ function renderDrops(campaigns) {
       if (dropStatus === 'claimed') barFill.classList.add('claimed');
       if (dropStatus === 'gql_claimed') barFill.classList.add('gql-claimed');
       if (dropStatus === 'complete') barFill.classList.add('complete');
+      if (dropStatus === 'claim_error') barFill.classList.add('claim-error');
       if (dropStatus === 'locked') barFill.classList.add('locked');
       if (dropStatus === 'active') barFill.classList.add('active');
 
@@ -452,53 +458,10 @@ function renderDrops(campaigns) {
       } else {
         barFill.style.width = `${d.progress || 0}%`;
       }
-
-      // ── Claim button for completed (ready-to-claim) drops ──
-      if (dropStatus === 'complete') {
-        const claimBtn = item.appendChild(document.createElement('button'));
-        claimBtn.className = 'drop-claim-btn';
-        claimBtn.textContent = 'Claim Drop';
-        claimBtn.addEventListener('click', (ev) => {
-          ev.stopPropagation(); // don't trigger the row's open-inventory handler
-          requestClaim(c, d, claimBtn);
-        });
-      }
     }
   }
 }
 
-// Ask the active Twitch tab (via the background relay) to claim a completed drop.
-// On success the content script emits DROP_CLAIMED, so a refresh reflects it.
-function requestClaim(campaign, drop, btnEl) {
-  if (btnEl.disabled) return;
-  btnEl.disabled = true;
-  btnEl.classList.add('claiming');
-  btnEl.textContent = 'Claiming…';
-
-  chrome.runtime.sendMessage({
-    type: 'CLAIM_DROP',
-    data: {
-      campaignId: campaign.id || campaign.campaignId,
-      dropId: drop.id,
-      dropInstanceId: drop.instanceId || '',
-      dropName: drop.name || '',
-    },
-  }, (res) => {
-    btnEl.classList.remove('claiming');
-    if (chrome.runtime.lastError || !res || !res.ok) {
-      btnEl.disabled = false;
-      btnEl.classList.add('claim-error');
-      btnEl.textContent = 'Retry claim';
-      const msg = (res && res.error) || (chrome.runtime.lastError && chrome.runtime.lastError.message) || 'Claim failed';
-      btnEl.title = msg;
-      setTimeout(() => btnEl.classList.remove('claim-error'), 2500);
-    } else {
-      btnEl.classList.add('claim-done');
-      btnEl.textContent = '✓ Claimed';
-      loadSession();
-    }
-  });
-}
 
 // Format remaining time as Xh Ym (e.g. "2h 30m")
 function formatRemaining(secs) {
