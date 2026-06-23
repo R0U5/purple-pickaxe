@@ -292,7 +292,26 @@ function formatNum(n) {
   return String(n);
 }
 
+// Bonus claim ids already counted, to dedupe double reports of the same bonus.
+// Shared across all tabs (the background is the single source of truth), so it
+// also catches the same channel open in two tabs both reporting one claim.
+const processedClaimIds = new Set();
+
 async function recordPointClaim(data, tabId) {
+  // Dedupe: each Twitch bonus has a unique claim id. If we've already counted
+  // it, ignore - prevents double counting when two poll cycles (or two tabs)
+  // report the same bonus before Twitch clears its availableClaim.
+  const claimId = sanitizeId(data.claimId);
+  if (claimId) {
+    if (processedClaimIds.has(claimId)) return;
+    processedClaimIds.add(claimId);
+    if (processedClaimIds.size > 200) {
+      const extra = processedClaimIds.size - 100;
+      let i = 0;
+      for (const id of processedClaimIds) { if (i++ >= extra) break; processedClaimIds.delete(id); }
+    }
+  }
+
   const session = await getSessionData();
   const channel = sanitizeString(data.channelName) || 'unknown';
   const key = channel.toLowerCase();

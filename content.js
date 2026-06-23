@@ -638,7 +638,7 @@ async function checkAndClaimChannelPoints(channel) {
     : 50;
 
   const avatar = await fetchChannelAvatar(channel);
-  sendMessage('POINTS_CLAIMED', { amount: delta, channelName: channel, avatar });
+  sendMessage('POINTS_CLAIMED', { amount: delta, channelName: channel, avatar, claimId: claim.id });
   if (newBalance !== null) {
     sendMessage('POINTS_BALANCE', { balance: newBalance, channelName: channel });
   }
