@@ -293,24 +293,20 @@ function formatNum(n) {
 }
 
 async function recordPointClaim(data, tabId) {
+  // Note: point totals are NOT accumulated here. They're derived from the
+  // authoritative balance in updatePointsBalance (see there), which is immune
+  // to double counting. This only records claim metadata: avatar, recency
+  // ordering, and the claim count.
   const session = await getSessionData();
   const channel = sanitizeString(data.channelName) || 'unknown';
   const key = channel.toLowerCase();
   if (!session.points[key]) {
-    session.points[key] = { count: 0, total: 0, avatar: sanitizeUrl(data.avatar), firstSeen: Date.now() };
+    session.points[key] = { total: 0, count: 0, avatar: sanitizeUrl(data.avatar), firstSeen: Date.now() };
   }
-  const amount = (typeof data.amount === 'number' && data.amount > 0) ? data.amount : 50;
-  session.points[key].count += 1;
-  session.points[key].total = (session.points[key].total || 0) + amount;
+  session.points[key].count = (session.points[key].count || 0) + 1;
   session.points[key].lastSeen = Date.now();
   const cleanAvatar = sanitizeUrl(data.avatar);
   if (cleanAvatar) session.points[key].avatar = cleanAvatar;
-
-  // Per-visit counter for the badge/current-channel stat: only count claims on
-  // the channel currently active (focused), so the badge tracks "this channel".
-  if (session.activeChannel && key === session.activeChannel.toLowerCase()) {
-    session.currentChannelPoints = (session.currentChannelPoints || 0) + amount;
-  }
 
   if (!session.recentChannels) session.recentChannels = [];
   const idx = session.recentChannels.indexOf(key);
@@ -498,10 +494,37 @@ async function recordDropClaim(data) {
 async function updatePointsBalance(data) {
   const session = await getSessionData();
   const channel = sanitizeString(data.channelName) || 'unknown';
+  const key = channel.toLowerCase();
+  const balance = typeof data.balance === 'number' ? data.balance : null;
+
   session.pointsBalances[channel] = {
-    balance: typeof data.balance === 'number' ? data.balance : 0,
+    balance: balance ?? 0,
     lastUpdated: Date.now(),
   };
+
+  // Points mined are derived from Twitch's authoritative balance: accumulate
+  // only increases above a per-channel high-water mark. The balance is ground
+  // truth, so this counts every gain exactly once - immune to double-reporting,
+  // multiple tabs, or service-worker restarts - and can never inflate. The
+  // read/raise of hwm below is synchronous (no await), so concurrent messages
+  // can't both add the same gain.
+  if (balance !== null) {
+    let p = session.points[key];
+    if (!p) {
+      p = session.points[key] = { total: 0, hwm: balance, count: 0, avatar: '', firstSeen: Date.now() };
+    } else if (typeof p.hwm !== 'number') {
+      p.hwm = balance; // establish baseline for entries created before a balance
+    } else if (balance > p.hwm) {
+      const gain = balance - p.hwm;
+      p.total = (p.total || 0) + gain;
+      p.hwm = balance;
+      if (session.activeChannel && key === session.activeChannel.toLowerCase()) {
+        session.currentChannelPoints = (session.currentChannelPoints || 0) + gain;
+      }
+    }
+    p.lastSeen = Date.now();
+  }
+
   await persistSession();
 }
 

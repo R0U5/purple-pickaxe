@@ -618,6 +618,12 @@ async function checkAndClaimChannelPoints(channel) {
 
   console.log('[Twitch Miner] Found claimable points, claimID:', claim.id);
   const balanceBefore = cp.balance;
+  // Report the pre-claim balance first so the points baseline (high-water mark)
+  // is set before the bonus lands - otherwise, if this is the first balance the
+  // background sees for the channel, the bonus wouldn't register as a gain.
+  if (typeof balanceBefore === 'number') {
+    sendMessage('POINTS_BALANCE', { balance: balanceBefore, channelName: channel });
+  }
 
   if (clickClaimButton()) {
     console.log('[Twitch Miner] Claimed via DOM click');
@@ -638,7 +644,7 @@ async function checkAndClaimChannelPoints(channel) {
     : 50;
 
   const avatar = await fetchChannelAvatar(channel);
-  sendMessage('POINTS_CLAIMED', { amount: delta, channelName: channel, avatar });
+  sendMessage('POINTS_CLAIMED', { channelName: channel, avatar });
   if (newBalance !== null) {
     sendMessage('POINTS_BALANCE', { balance: newBalance, channelName: channel });
   }
