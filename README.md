@@ -89,7 +89,3 @@ Required to:
 
 
 [Get Purple Pickaxe Here](https://chromewebstore.google.com/detail/purple-pickaxe/dinncmkklpbdjmdanobobapdldefheei)
-
-```
-
----
